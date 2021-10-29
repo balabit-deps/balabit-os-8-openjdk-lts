@@ -500,12 +500,14 @@ class PhaseCFG : public Phase {
   CFGLoop* create_loop_tree();
   bool is_dominator(Node* dom_node, Node* node);
   bool is_CFG(Node* n);
-  bool is_control_proj_or_safepoint(Node* n);
-  Block* find_block_for_node(Node* n);
+  bool is_control_proj_or_safepoint(Node* n) const;
+  Block* find_block_for_node(Node* n) const;
   bool is_dominating_control(Node* dom_ctrl, Node* n);
   #ifndef PRODUCT
   bool _trace_opto_pipelining;  // tracing flag
   #endif
+
+  bool unrelated_load_in_store_null_block(Node* store, Node* load);
 
  public:
   PhaseCFG(Arena* arena, RootNode* root, Matcher& matcher);

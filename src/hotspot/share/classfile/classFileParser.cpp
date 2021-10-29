@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -1077,7 +1077,7 @@ public:
   u2 _contended_group;
 
   AnnotationCollector(Location location)
-    : _location(location), _annotations_present(0)
+    : _location(location), _annotations_present(0), _contended_group(0)
   {
     assert((int)_annotation_LIMIT <= (int)sizeof(_annotations_present) * BitsPerByte, "");
   }
@@ -3240,6 +3240,13 @@ u2 ClassFileParser::parse_classfile_inner_classes_attribute(const ClassFileStrea
         valid_klass_reference_at(outer_class_info_index),
       "outer_class_info_index %u has bad constant type in class file %s",
       outer_class_info_index, CHECK_0);
+
+    if (outer_class_info_index != 0) {
+      const Symbol* const outer_class_name = cp->klass_name_at(outer_class_info_index);
+      char* bytes = (char*)outer_class_name->bytes();
+      guarantee_property(bytes[0] != JVM_SIGNATURE_ARRAY,
+                         "Outer class is an array class in class file %s", CHECK_0);
+    }
     // Inner class name
     const u2 inner_name_index = cfs->get_u2_fast();
     check_property(
