@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -31,7 +31,7 @@
 #include "runtime/java.hpp"
 #include "runtime/os.hpp"
 #include "runtime/stubCodeGenerator.hpp"
-#include "vm_version_sparc.hpp"
+#include "runtime/vm_version.hpp"
 
 #include <sys/mman.h>
 
@@ -160,7 +160,8 @@ void VM_Version::initialize() {
 
   // Use compare and branch instructions if available.
   if (has_cbcond()) {
-    if (FLAG_IS_DEFAULT(UseCBCond)) {
+    // cbcond suspected to cause issues on Athena CPUs
+    if (FLAG_IS_DEFAULT(UseCBCond) && !is_athena()) {
       FLAG_SET_DEFAULT(UseCBCond, true);
     }
   } else if (UseCBCond) {
@@ -218,7 +219,7 @@ void VM_Version::initialize() {
 
   char buf[512];
   jio_snprintf(buf, sizeof(buf),
-               "%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s"
+               "%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s"
                "%s%s%s%s%s%s%s%s%s" "%s%s%s%s%s%s%s%s%s"
                "%s%s%s%s%s%s%s",
                (has_v9()          ? "v9" : ""),
@@ -228,6 +229,7 @@ void VM_Version::initialize() {
                (has_blk_init()    ? ", blk_init" : ""),
                (has_fmaf()        ? ", fmaf" : ""),
                (has_hpc()         ? ", hpc" : ""),
+               (has_athena()      ? ", athena" : ""),
                (has_ima()         ? ", ima" : ""),
                (has_aes()         ? ", aes" : ""),
                (has_des()         ? ", des" : ""),

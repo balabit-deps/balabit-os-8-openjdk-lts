@@ -1149,6 +1149,11 @@ Node* PhaseStringOpts::int_stringSize(GraphKit& kit, Node* arg) {
     int arg_val = arg->get_int();
     int count = 1;
     if (arg_val < 0) {
+      // Special case for min_jint - it can't be negated.
+      if (arg_val == min_jint) {
+        return __ intcon(11);
+      }
+
       arg_val = -arg_val;
       count++;
     }
@@ -1210,6 +1215,7 @@ Node* PhaseStringOpts::int_stringSize(GraphKit& kit, Node* arg) {
 
     // Add loop predicate first.
     kit.add_empty_predicates();
+    C->set_has_loops(true);
 
     RegionNode *loop = new RegionNode(3);
     loop->init_req(1, kit.control());
@@ -1287,6 +1293,7 @@ void PhaseStringOpts::getChars(GraphKit& kit, Node* arg, Node* dst_array, BasicT
   // Add loop predicate first.
   kit.add_empty_predicates();
 
+  C->set_has_loops(true);
   RegionNode* head = new RegionNode(3);
   head->init_req(1, kit.control());
 

@@ -29,6 +29,7 @@
 #include "opto/cfgnode.hpp"
 #include "opto/connode.hpp"
 #include "opto/machnode.hpp"
+#include "opto/movenode.hpp"
 #include "opto/mulnode.hpp"
 #include "opto/phaseX.hpp"
 #include "opto/subnode.hpp"
@@ -832,6 +833,95 @@ const Type *XorLNode::add_ring( const Type *t0, const Type *t1 ) const {
   return TypeLong::make( r0->get_con() ^ r1->get_con() );
 }
 
+
+Node* MaxNode::build_min_max(Node* a, Node* b, bool is_max, bool is_unsigned, const Type* t, PhaseGVN& gvn) {
+  bool is_int = gvn.type(a)->isa_int();
+  assert(is_int || gvn.type(a)->isa_long(), "int or long inputs");
+  assert(is_int == (gvn.type(b)->isa_int() != NULL), "inconsistent inputs");
+  if (!is_unsigned) {
+    if (is_max) {
+      if (is_int) {
+        Node* res =  gvn.transform(new MaxINode(a, b));
+        assert(gvn.type(res)->is_int()->_lo >= t->is_int()->_lo && gvn.type(res)->is_int()->_hi <= t->is_int()->_hi, "type doesn't match");
+        return res;
+      } else {
+        Node* cmp = gvn.transform(new CmpLNode(a, b));
+        Node* bol = gvn.transform(new BoolNode(cmp, BoolTest::lt));
+        return gvn.transform(new CMoveLNode(bol, a, b, t->is_long()));
+      }
+    } else {
+      if (is_int) {
+        Node* res =  gvn.transform(new MinINode(a, b));
+        assert(gvn.type(res)->is_int()->_lo >= t->is_int()->_lo && gvn.type(res)->is_int()->_hi <= t->is_int()->_hi, "type doesn't match");
+        return res;
+      } else {
+        Node* cmp = gvn.transform(new CmpLNode(b, a));
+        Node* bol = gvn.transform(new BoolNode(cmp, BoolTest::lt));
+        return gvn.transform(new CMoveLNode(bol, a, b, t->is_long()));
+      }
+    }
+  } else {
+    if (is_max) {
+      if (is_int) {
+        Node* cmp = gvn.transform(new CmpUNode(a, b));
+        Node* bol = gvn.transform(new BoolNode(cmp, BoolTest::lt));
+        return gvn.transform(new CMoveINode(bol, a, b, t->is_int()));
+      } else {
+        Node* cmp = gvn.transform(new CmpULNode(a, b));
+        Node* bol = gvn.transform(new BoolNode(cmp, BoolTest::lt));
+        return gvn.transform(new CMoveLNode(bol, a, b, t->is_long()));
+      }
+    } else {
+      if (is_int) {
+        Node* cmp = gvn.transform(new CmpUNode(b, a));
+        Node* bol = gvn.transform(new BoolNode(cmp, BoolTest::lt));
+        return gvn.transform(new CMoveINode(bol, a, b, t->is_int()));
+      } else {
+        Node* cmp = gvn.transform(new CmpULNode(b, a));
+        Node* bol = gvn.transform(new BoolNode(cmp, BoolTest::lt));
+        return gvn.transform(new CMoveLNode(bol, a, b, t->is_long()));
+      }
+    }
+  }
+}
+
+Node* MaxNode::build_min_max_diff_with_zero(Node* a, Node* b, bool is_max, const Type* t, PhaseGVN& gvn) {
+  bool is_int = gvn.type(a)->isa_int();
+  assert(is_int || gvn.type(a)->isa_long(), "int or long inputs");
+  assert(is_int == (gvn.type(b)->isa_int() != NULL), "inconsistent inputs");
+  Node* zero = NULL;
+  if (is_int) {
+    zero = gvn.intcon(0);
+  } else {
+    zero = gvn.longcon(0);
+  }
+  if (is_max) {
+    if (is_int) {
+      Node* cmp = gvn.transform(new CmpINode(a, b));
+      Node* sub = gvn.transform(new SubINode(a, b));
+      Node* bol = gvn.transform(new BoolNode(cmp, BoolTest::lt));
+      return gvn.transform(new CMoveINode(bol, sub, zero, t->is_int()));
+    } else {
+      Node* cmp = gvn.transform(new CmpLNode(a, b));
+      Node* sub = gvn.transform(new SubLNode(a, b));
+      Node* bol = gvn.transform(new BoolNode(cmp, BoolTest::lt));
+      return gvn.transform(new CMoveLNode(bol, sub, zero, t->is_long()));
+    }
+  } else {
+    if (is_int) {
+      Node* cmp = gvn.transform(new CmpINode(b, a));
+      Node* sub = gvn.transform(new SubINode(a, b));
+      Node* bol = gvn.transform(new BoolNode(cmp, BoolTest::lt));
+      return gvn.transform(new CMoveINode(bol, sub, zero, t->is_int()));
+    } else {
+      Node* cmp = gvn.transform(new CmpLNode(b, a));
+      Node* sub = gvn.transform(new SubLNode(a, b));
+      Node* bol = gvn.transform(new BoolNode(cmp, BoolTest::lt));
+      return gvn.transform(new CMoveLNode(bol, sub, zero, t->is_long()));
+    }
+  }
+}
+
 //=============================================================================
 //------------------------------add_ring---------------------------------------
 // Supplied function returns the sum of the inputs.
@@ -942,4 +1032,92 @@ const Type *MinINode::add_ring( const Type *t0, const Type *t1 ) const {
 
   // Otherwise just MIN them bits.
   return TypeInt::make( MIN2(r0->_lo,r1->_lo), MIN2(r0->_hi,r1->_hi), MAX2(r0->_widen,r1->_widen) );
+}
+
+//------------------------------add_ring---------------------------------------
+const Type *MinFNode::add_ring( const Type *t0, const Type *t1 ) const {
+  const TypeF *r0 = t0->is_float_constant();
+  const TypeF *r1 = t1->is_float_constant();
+
+  if (r0->is_nan()) {
+    return r0;
+  }
+  if (r1->is_nan()) {
+    return r1;
+  }
+
+  float f0 = r0->getf();
+  float f1 = r1->getf();
+  if (f0 != 0.0f || f1 != 0.0f) {
+    return f0 < f1 ? r0 : r1;
+  }
+
+  // handle min of 0.0, -0.0 case.
+  return (jint_cast(f0) < jint_cast(f1)) ? r0 : r1;
+}
+
+//------------------------------add_ring---------------------------------------
+const Type *MinDNode::add_ring( const Type *t0, const Type *t1 ) const {
+  const TypeD *r0 = t0->is_double_constant();
+  const TypeD *r1 = t1->is_double_constant();
+
+  if (r0->is_nan()) {
+    return r0;
+  }
+  if (r1->is_nan()) {
+    return r1;
+  }
+
+  double d0 = r0->getd();
+  double d1 = r1->getd();
+  if (d0 != 0.0 || d1 != 0.0) {
+    return d0 < d1 ? r0 : r1;
+  }
+
+  // handle min of 0.0, -0.0 case.
+  return (jlong_cast(d0) < jlong_cast(d1)) ? r0 : r1;
+}
+
+//------------------------------add_ring---------------------------------------
+const Type *MaxFNode::add_ring( const Type *t0, const Type *t1 ) const {
+  const TypeF *r0 = t0->is_float_constant();
+  const TypeF *r1 = t1->is_float_constant();
+
+  if (r0->is_nan()) {
+    return r0;
+  }
+  if (r1->is_nan()) {
+    return r1;
+  }
+
+  float f0 = r0->getf();
+  float f1 = r1->getf();
+  if (f0 != 0.0f || f1 != 0.0f) {
+    return f0 > f1 ? r0 : r1;
+  }
+
+  // handle max of 0.0,-0.0 case.
+  return (jint_cast(f0) > jint_cast(f1)) ? r0 : r1;
+}
+
+//------------------------------add_ring---------------------------------------
+const Type *MaxDNode::add_ring( const Type *t0, const Type *t1 ) const {
+  const TypeD *r0 = t0->is_double_constant();
+  const TypeD *r1 = t1->is_double_constant();
+
+  if (r0->is_nan()) {
+    return r0;
+  }
+  if (r1->is_nan()) {
+    return r1;
+  }
+
+  double d0 = r0->getd();
+  double d1 = r1->getd();
+  if (d0 != 0.0 || d1 != 0.0) {
+    return d0 > d1 ? r0 : r1;
+  }
+
+  // handle max of 0.0, -0.0 case.
+  return (jlong_cast(d0) > jlong_cast(d1)) ? r0 : r1;
 }

@@ -160,13 +160,13 @@ bool Dictionary::resize_if_needed() {
 
 bool DictionaryEntry::contains_protection_domain(oop protection_domain) const {
 #ifdef ASSERT
-  if (oopDesc::equals(protection_domain, instance_klass()->protection_domain())) {
+  if (protection_domain == instance_klass()->protection_domain()) {
     // Ensure this doesn't show up in the pd_set (invariant)
     bool in_pd_set = false;
     for (ProtectionDomainEntry* current = pd_set_acquire();
                                 current != NULL;
                                 current = current->next()) {
-      if (oopDesc::equals(current->object_no_keepalive(), protection_domain)) {
+      if (current->object_no_keepalive() == protection_domain) {
         in_pd_set = true;
         break;
       }
@@ -178,7 +178,7 @@ bool DictionaryEntry::contains_protection_domain(oop protection_domain) const {
   }
 #endif /* ASSERT */
 
-  if (oopDesc::equals(protection_domain, instance_klass()->protection_domain())) {
+  if (protection_domain == instance_klass()->protection_domain()) {
     // Succeeds trivially
     return true;
   }
@@ -186,7 +186,7 @@ bool DictionaryEntry::contains_protection_domain(oop protection_domain) const {
   for (ProtectionDomainEntry* current = pd_set_acquire();
                               current != NULL;
                               current = current->next()) {
-    if (oopDesc::equals(current->object_no_keepalive(), protection_domain)) return true;
+    if (current->object_no_keepalive() == protection_domain) return true;
   }
   return false;
 }
@@ -571,8 +571,8 @@ void Dictionary::print_on(outputStream* st) const {
   ResourceMark rm;
 
   assert(loader_data() != NULL, "loader data should not be null");
-  st->print_cr("Java dictionary (table_size=%d, classes=%d)",
-               table_size(), number_of_entries());
+  st->print_cr("Java dictionary (table_size=%d, classes=%d, resizable=%s)",
+               table_size(), number_of_entries(), BOOL_TO_STR(_resizable));
   st->print_cr("^ indicates that initiating loader is different from defining loader");
 
   for (int index = 0; index < table_size(); index++) {

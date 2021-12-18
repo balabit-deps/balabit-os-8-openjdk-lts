@@ -269,7 +269,11 @@ static Node *scan_mem_chain(Node *mem, int alias_idx, int offset, Node *start_me
         }
         mem = in->in(TypeFunc::Memory);
       } else {
+#ifdef ASSERT
+        in->dump();
+        mem->dump();
         assert(false, "unexpected projection");
+#endif
       }
     } else if (mem->is_Store()) {
       const TypePtr* atype = mem->as_Store()->adr_type();
@@ -280,8 +284,9 @@ static Node *scan_mem_chain(Node *mem, int alias_idx, int offset, Node *start_me
         uint adr_iid = atype->is_oopptr()->instance_id();
         // Array elements references have the same alias_idx
         // but different offset and different instance_id.
-        if (adr_offset == offset && adr_iid == alloc->_idx)
+        if (adr_offset == offset && adr_iid == alloc->_idx) {
           return mem;
+        }
       } else {
         assert(adr_idx == Compile::AliasIdxRaw, "address must match or be raw");
       }
@@ -295,10 +300,11 @@ static Node *scan_mem_chain(Node *mem, int alias_idx, int offset, Node *start_me
         InitializeNode* init = alloc->as_Allocate()->initialization();
         // We are looking for stored value, return Initialize node
         // or memory edge from Allocate node.
-        if (init != NULL)
+        if (init != NULL) {
           return init;
-        else
+        } else {
           return alloc->in(TypeFunc::Memory); // It will produce zero value (see callers).
+        }
       }
       // Otherwise skip it (the call updated 'mem' value).
     } else if (mem->Opcode() == Op_SCMemProj) {
@@ -462,16 +468,17 @@ Node *PhaseMacroExpand::value_from_mem_phi(Node *mem, BasicType ft, const Type *
       if (val == mem) {
         values.at_put(j, mem);
       } else if (val->is_Store()) {
-#if INCLUDE_SHENANDOAHGC
         Node* n = val->in(MemNode::ValueIn);
+#if INCLUDE_SHENANDOAHGC
         if (UseShenandoahGC) {
           BarrierSetC2* bs = BarrierSet::barrier_set()->barrier_set_c2();
           n = bs->step_over_gc_barrier(n);
         }
-        values.at_put(j, n);
-#else
-        values.at_put(j, val->in(MemNode::ValueIn));
 #endif
+        if (is_subword_type(ft)) {
+          n = Compile::narrow_value(ft, n, phi_type, &_igvn, true);
+        }
+        values.at_put(j, n);
       } else if(val->is_Proj() && val->in(0) == alloc) {
         values.at_put(j, _igvn.zerocon(ft));
       } else if (val->is_Phi()) {
@@ -493,10 +500,8 @@ Node *PhaseMacroExpand::value_from_mem_phi(Node *mem, BasicType ft, const Type *
         }
         values.at_put(j, res);
       } else {
-#ifdef ASSERT
-        val->dump();
+        DEBUG_ONLY( val->dump(); )
         assert(false, "unknown node on this path");
-#endif
         return NULL;  // unknown node on this path
       }
     }
@@ -574,6 +579,7 @@ Node *PhaseMacroExpand::value_from_mem(Node *sfpt_mem, Node *sfpt_ctl, BasicType
     } else if (mem->is_ArrayCopy()) {
       done = true;
     } else {
+      DEBUG_ONLY( mem->dump(); )
       assert(false, "unexpected node");
     }
   }
@@ -2011,15 +2017,15 @@ void PhaseMacroExpand::expand_allocate_array(AllocateArrayNode *alloc) {
 // Mark all associated (same box and obj) lock and unlock nodes for
 // elimination if some of them marked already.
 void PhaseMacroExpand::mark_eliminated_box(Node* oldbox, Node* obj) {
-  if (oldbox->as_BoxLock()->is_eliminated())
+  if (oldbox->as_BoxLock()->is_eliminated()) {
     return; // This BoxLock node was processed already.
-
+  }
   // New implementation (EliminateNestedLocks) has separate BoxLock
   // node for each locked region so mark all associated locks/unlocks as
   // eliminated even if different objects are referenced in one locked region
   // (for example, OSR compilation of nested loop inside locked scope).
   if (EliminateNestedLocks ||
-      oldbox->as_BoxLock()->is_simple_lock_region(NULL, obj)) {
+      oldbox->as_BoxLock()->is_simple_lock_region(NULL, obj, NULL)) {
     // Box is used only in one lock region. Mark this box as eliminated.
     _igvn.hash_delete(oldbox);
     oldbox->as_BoxLock()->set_eliminated(); // This changes box's hash value
@@ -2191,11 +2197,7 @@ bool PhaseMacroExpand::eliminate_locking_node(AbstractLockNode *alock) {
 
 #ifndef PRODUCT
   if (PrintEliminateLocks) {
-    if (alock->is_Lock()) {
-      tty->print_cr("++++ Eliminated: %d Lock", alock->_idx);
-    } else {
-      tty->print_cr("++++ Eliminated: %d Unlock", alock->_idx);
-    }
+    tty->print_cr("++++ Eliminated: %d %s '%s'", alock->_idx, (alock->is_Lock() ? "Lock" : "Unlock"), alock->kind_as_string());
   }
 #endif
 
@@ -2567,16 +2569,21 @@ void PhaseMacroExpand::eliminate_macro_nodes() {
   if (C->macro_count() == 0)
     return;
 
-  // First, attempt to eliminate locks
+  // Before elimination may re-mark (change to Nested or NonEscObj)
+  // all associated (same box and obj) lock and unlock nodes.
   int cnt = C->macro_count();
   for (int i=0; i < cnt; i++) {
     Node *n = C->macro_node(i);
     if (n->is_AbstractLock()) { // Lock and Unlock nodes
-      // Before elimination mark all associated (same box and obj)
-      // lock and unlock nodes.
       mark_eliminated_locking_nodes(n->as_AbstractLock());
     }
   }
+  // Re-marking may break consistency of Coarsened locks.
+  if (!C->coarsened_locks_consistent()) {
+    return; // recompile without Coarsened locks if broken
+  }
+
+  // First, attempt to eliminate locks
   bool progress = true;
   while (progress) {
     progress = false;
@@ -2637,6 +2644,7 @@ void PhaseMacroExpand::eliminate_macro_nodes() {
 bool PhaseMacroExpand::expand_macro_nodes() {
   // Last attempt to eliminate macro nodes.
   eliminate_macro_nodes();
+  if (C->failing())  return true;
 
   // Make sure expansion will not cause node limit to be exceeded.
   // Worst case is a macro node gets expanded into about 200 nodes.
