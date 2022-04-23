@@ -1,8 +1,16 @@
-openjdk-lts (11.0.14.1+1-0ubuntu1~20.04) focal-security; urgency=medium
+openjdk-lts (11.0.15+10-0ubuntu0.20.04.1) focal-security; urgency=medium
 
-  * Backport 11.0.14.1 to Ubuntu 20.04 LTS.
+  * Backport 11.0.15 to Ubuntu 20.04.
 
- -- Matthias Klose <doko@ubuntu.com>  Sun, 27 Mar 2022 12:06:41 +0200
+ -- Marc Deslauriers <marc.deslauriers@ubuntu.com>  Sat, 23 Apr 2022 09:02:10 -0400
+
+openjdk-lts (11.0.15+10-0ubuntu0.22.04.1) jammy-security; urgency=medium
+
+  * OpenJDK 11.0.15+10 build (release).
+    - CVE-2022-21476, CVE-2022-21496, CVE-2022-21434, CVE-2022-21426,
+      CVE-2022-21443
+
+ -- Marc Deslauriers <marc.deslauriers@ubuntu.com>  Fri, 22 Apr 2022 09:06:53 -0400
 
 openjdk-lts (11.0.14.1+1-0ubuntu1) jammy; urgency=medium
 
