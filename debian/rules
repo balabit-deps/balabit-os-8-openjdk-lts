@@ -97,17 +97,22 @@ else
 endif
 jvmver		= 1.11.0
 shortver	= 11
-v_upstream	:= $(shell echo $(PKGVERSION) | sed 's/-[^-]\+$$//')
-v_pkgrel	:= $(shell echo $(PKGVERSION) | sed 's/^.*-//')
-# sanitize it as --with-version-opt only allows '[a-z][A-Z][0-9].-'
-v_pkgrelsan	:= $(shell echo $(v_pkgrel) | tr -c '[a-z][A-Z][0-9].\n-' '.')
+v_debian	:= $(shell echo $(PKGVERSION) | sed 's/ea//')
+v_upstream	:= $(shell echo $(v_debian) | sed 's/-[^-][^-]*$$//')
+v_pkgrel	:= $(shell echo $(v_debian) | sed 's/^.*-//')
+# FIXME. currently v_upstream like 11~4
 v_upbase	:= $(word 1, $(subst +, , $(v_upstream)))
 v_upbuild	:= $(word 2, $(subst +, , $(v_upstream)))
-
+#v_upbase	:= $(word 1, $(subst ~, , $(v_upstream)))
+#v_upbuild	:= $(word 2, $(subst ~, , $(v_upstream)))
 # that should be the package version ...
-ifneq ($(PKGVERSION),$(v_upbase)+$(v_upbuild)-$(v_pkgrel))
-  $(error wrong version: $(v_upbase)+$(v_upbuild)-$(v_pkgrel) should be: $(PKGVERSION))
+
+ifneq ($(v_debian),$(v_upbase)+$(v_upbuild)-$(v_pkgrel))
+  $(error wrong version: $(v_upbase)+$(v_upbuild)-$(v_pkgrel) should be: $(v_debian))
 endif
+#ifneq ($(v_debian),$(v_upbase)~$(v_upbuild)-$(v_pkgrel))
+#  $(error wrong version: $(v_upbase)~$(v_upbuild)-$(v_pkgrel) should be: $(v_debian))
+#endif
 
 ifneq (,$(DEB_HOST_MULTIARCH))
   jdirname	= java-$(shortver)-$(origin)-$(DEB_HOST_ARCH)
@@ -160,6 +165,7 @@ with_docs = $(if $(findstring nodoc, $(DEB_BUILD_OPTIONS)),,yes)
 ifneq (,$(filter $(distrel), precise trusty))
   with_docs =
 endif
+# with_check = disabled for this upload
 
 with_wqy_zenhai = $(if $(filter $(distrel),lenny),,yes)
 
@@ -176,15 +182,14 @@ default_vm = $(if $(filter $(DEB_HOST_ARCH), $(hotspot_archs)),hotspot,zero)
 any_archs = alpha amd64 armel armhf arm64 i386 ia64 mips mipsel mips64 mips64el powerpc powerpcspe ppc64 ppc64el m68k riscv64 sh4 sparc sparc64 s390x x32
 
 altzero_archs = $(hotspot_archs)
-#ifneq (,$(filter $(distrel),trusty))
-#  altzero_archs := $(filter-out arm64, $(altzero_archs))
-#endif
+ifneq (,$(filter $(distrel),trusty))
+  altzero_archs := $(filter-out arm64, $(altzero_archs))
+endif
+# ftbfs in 11.0.5+bx, and 13+17
+altzero_archs := $(filter-out armhf, $(altzero_archs))
 
 # FIXME: Zero currently FTBFS on sparc64 with gcc-9
 altzero_archs := $(filter-out sparc64, $(altzero_archs))
-
-# ftbfs in 11.0.5+bx, and 13+17
-altzero_archs := $(filter-out armhf, $(altzero_archs))
 
 ifneq (,$(filter noaltzero, $(DEB_BUILD_OPTIONS)))
   altzero_archs =
@@ -476,7 +481,7 @@ endif
 COMMON_CONFIGURE_ARGS += \
 	--with-version-pre='$(if $(filter yes, $(is_upstream_release)),,ea)' \
 	--with-version-build='$(v_upbuild)' \
-	--with-version-opt='$(distribution)-$(v_pkgrelsan)' \
+	--with-version-opt='post-$(distribution)-$(v_pkgrel)' \
 	--with-copyright-year=$(PKGYEAR) \
 
 COMMON_CONFIGURE_ARGS += \
@@ -1146,29 +1151,36 @@ endif
 TESTS_TO_RUN = $(addprefix check-,$(TEST_SUITES))
 
 check-hotspot: stamps/build
+	@echo '===== START $@ ====='
 	mkdir -p jtreg-test-output/hotspot
 	JTREG_OPTIONS=$(JTREG_OPTIONS) VMNAME=$(VMNAME) JDK_TO_TEST=$(builddir)/$(sdkimg) \
 	AUTOPKGTEST_TMP=/tmp/ AUTOPKGTEST_ARTIFACTS=jtreg-test-output/ \
 	  $(TIME) debian/tests/hotspot | tee jtreg-test-output/$@.log
-
+	@echo '===== END $@ ====='
 
 check-langtools: stamps/build
+	@echo '===== START $@ ====='
 	mkdir -p jtreg-test-output/langtools
 	JTREG_OPTIONS=$(JTREG_OPTIONS) VMNAME=$(VMNAME) JDK_TO_TEST=$(builddir)/$(sdkimg) \
 	AUTOPKGTEST_TMP=/tmp/ AUTOPKGTEST_ARTIFACTS=jtreg-test-output/ \
 	  $(TIME) debian/tests/langtools | tee jtreg-test-output/$@.log
+	@echo '===== END $@ ====='
 
 check-jaxp: stamps/build
+	@echo '===== START $@ ====='
 	mkdir -p jtreg-test-output/jaxp
 	JTREG_OPTIONS=$(JTREG_OPTIONS) VMNAME=$(VMNAME) JDK_TO_TEST=$(builddir)/$(sdkimg) \
 	AUTOPKGTEST_TMP=/tmp/ AUTOPKGTEST_ARTIFACTS=jtreg-test-output/ \
 	  $(TIME) debian/tests/jaxp | tee jtreg-test-output/$@.log
+	@echo '===== END $@ ====='
 
 check-jdk: stamps/build
+	@echo '===== START $@ ====='
 	mkdir -p jtreg-test-output/jdk
 	JTREG_OPTIONS=$(JTREG_OPTIONS) VMNAME=$(VMNAME) JDK_TO_TEST=$(builddir)/$(sdkimg) \
 	AUTOPKGTEST_TMP=/tmp/ AUTOPKGTEST_ARTIFACTS=jtreg-test-output/ \
 	  $(TIME) debian/tests/jdk | tee jtreg-test-output/$@.log
+	@echo '===== END $@ ====='
 
 jtregcheck: $(TESTS_TO_RUN)
 	for i in $(TEST_SUITES); do \
@@ -1186,7 +1198,7 @@ clean: debian-clean
 	rm -f bin/{jtreg.tmwrc,my-jtreg-run,my-xvfb-run,auto*,ifnames}
 	rm -f buildwatch.pid
 	rm -f config.log configure.log
-	dh_clean -Xtest/jaxp/javax/xml/jaxp/functional/test/astro/xmlfiles/catalog.xml.bak
+	dh_clean
 
 debian-clean:
 	dh_testdir
@@ -1834,8 +1846,9 @@ endif
 
 is_release		= yes
 git_project		= jdk11u
-git_tag			= jdk-11.0.15+10
+git_tag			= jdk-11.0.16+8
 package_version		= $(subst jdk-,,$(git_tag))
+package_version		= $(shell echo $(PKGVERSION) | sed 's/-[^-][^-]*$$//')
 ifneq ($(is_release),yes)
   package_version	:= $(subst +,~,$(package_version))
 endif
