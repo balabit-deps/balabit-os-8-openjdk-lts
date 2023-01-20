@@ -151,7 +151,7 @@ ifneq (,$(filter parallel=%,$(subst $(COMMA), ,$(DEB_BUILD_OPTIONS))))
   NJOBS = $(subst parallel=,,$(filter parallel=%,$(subst $(COMMA), ,$(DEB_BUILD_OPTIONS))))
 endif
 
-ifneq (,$(filter $(distrel), focal jammy kinetic))
+ifneq (,$(filter $(distrel), focal jammy kinetic lunar))
   jtreg_pkg = jtreg6
 else ifneq (,$(filter $(distrel), sid bookworm bullseye))
   jtreg_pkg = jtreg
@@ -165,7 +165,7 @@ ifneq (,$(filter $(DEB_HOST_ARCH), alpha))
   with_check = disabled running check on $(DEB_HOST_ARCH)
 endif
 # no jtreg backport yet
-ifneq (,$(filter $(distrel), precise trusty xenial bionic))
+ifneq (,$(filter $(distrel), precise trusty xenial))
   with_check = disabled for $(distrel)
 endif
 
@@ -894,7 +894,6 @@ debian/control: debian/control.in debian/tests/control debian/rules
 
 debian/tests/control: debian/tests/control.in debian/rules
 	sed \
-		-e 's/^@@/$(if $(jtreg_pkg),,#)/g' \
 		-e 's/@jtreg_pkg@/$(jtreg_pkg)/g' \
 		-e 's/@min_jtreg_version@/$(min_jtreg_version)/g' \
 		$< > $@;
@@ -1248,7 +1247,7 @@ install: packaging-files
 
 	chmod -R u+w $(d)
 
-	: # use javaws from icedtea-netx 
+	: # use javaws from icedtea-netx
 	find $(d) -name 'javaws*' | xargs -r rm -f
 
 	: # install default jvm config file

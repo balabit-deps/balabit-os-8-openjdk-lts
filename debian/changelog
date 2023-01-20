@@ -1,8 +1,21 @@
-openjdk-lts (11.0.17+8-1ubuntu2~20.04) focal-security; urgency=medium
+openjdk-lts (11.0.18+10-0ubuntu1~20.04.1) focal-security; urgency=medium
 
-  * Build 11.0.17+8 for Ubuntu 20.04 LTS.
+  * Build for Ubuntu 20.04.
 
- -- Matthias Klose <doko@ubuntu.com>  Tue, 25 Oct 2022 11:30:51 +0200
+ -- Vladimir Petko <vladimir.petko@canonical.com>  Fri, 20 Jan 2023 22:07:44 +1300
+
+openjdk-lts (11.0.18+10-0ubuntu1) lunar; urgency=medium
+
+  * OpenJDK 11.0.18 release, build 10.
+    - CVE-2023-21835, CVE-2023-21843
+    - Release notes:
+      https://www.oracle.com/java/technologies/javase/11-0-18-relnotes.html
+  * debian/patches/*: Refreshed patches for the new release and dropped unused
+    patches.
+  * debian/watch: use jdk11u repository as upstream.
+  * debian/rules: add lunar to jtreg version selection.
+
+ -- Vladimir Petko <vladimir.petko@canonical.com>  Thu, 19 Jan 2023 21:24:22 +1300 
 
 openjdk-lts (11.0.17+8-1ubuntu2) kinetic-security; urgency=medium
 
