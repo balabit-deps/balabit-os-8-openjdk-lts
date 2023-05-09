@@ -4,8 +4,10 @@ set -o errtrace
 set -o pipefail
 set -o nounset
 
-debian/tests/jtreg-autopkgtest.sh jaxp -exclude:test/jaxp/ProblemList.txt -exclude:debian/failed-tests-problemlist.txt test/jaxp && jtreg_exit=0 || jtreg_exit=$?
-
-[ $jtreg_exit -eq 77 ] && exit 77
+debian/tests/jtreg-autopkgtest.sh jaxp \
+    -exclude:test/jaxp/ProblemList.txt \
+    -dir:test/jaxp \
+    -k:!stress \
+    :tier1 :tier2
 
 debian/tests/jtdiff-autopkgtest.sh jaxp
