@@ -1,8 +1,32 @@
-openjdk-lts (11.0.19+7~us1-0ubuntu1~20.04.1) focal-security; urgency=medium
+openjdk-lts (11.0.20+8-1ubuntu1~20.04) focal-security; urgency=high
 
   * Upload to Ubuntu 20.04.
+  * d/t/jtreg-autopkgtest.{sh,in}: JDK-8232153 - set NSS_DEFAULT_DB_TYPE
+    to let sun/security/pkcs11/Secmod/AddTrustedCert.java pass.
 
- -- Vladimir Petko <vladimir.petko@canonical.com>  Wed, 10 May 2023 09:02:17 +1200
+ -- Vladimir Petko <vladimir.petko@canonical.com>  Thu, 20 Jul 2023 14:57:46 +1200
+
+openjdk-lts (11.0.20+8-1ubuntu1) mantic; urgency=high
+
+  * OpenJDK 11.0.20 release, build 8.
+    - CVE-2023-22041, CVE-2023-25193, CVE-2023-22045,
+      CVE-2023-22049, CVE-2023-22036, CVE-2023-22006.
+    - Release notes:
+      https://www.oracle.com/java/technologies/javase/11-0-20-relnotes.html#R11_0_20
+
+  * Merge changes from 11.0.20+8-1:
+  * Link with --no-as-needed. Closes: #1031521.
+  * Provide versioned java-runtime, java-runtime-headless, java-sdk
+    and java-sdk-headless virtual packages (Emmanuel Bourg).
+  * Configure --with-stdc++lib=static on ia64.
+  * Bump standards version.
+  * Refresh patches.
+
+  [ Vladimir Petko ]
+  * debian/copyright: convert to a machine-readable format.
+   debian/copyright: align excludes statement with openjdk-17.
+
+ -- Pushkar Kulkarni <pushkar.kulkarni@ubuntu.com>  Wed, 19 Jul 2023 10:45:13 +0200
 
 openjdk-lts (11.0.19+7~us1-0ubuntu1) mantic; urgency=medium
 

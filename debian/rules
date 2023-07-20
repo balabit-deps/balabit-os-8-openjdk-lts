@@ -100,19 +100,20 @@ shortver	= 11
 v_debian	:= $(shell echo $(PKGVERSION) | sed 's/ea//' | sed 's/\~us[[:digit:]]\+//')
 v_upstream	:= $(shell echo $(v_debian) | sed 's/-[^-][^-]*$$//')
 v_pkgrel	:= $(shell echo $(v_debian) | sed 's/^.*-//')
-# FIXME. currently v_upstream like 11~4
-v_upbase	:= $(word 1, $(subst +, , $(v_upstream)))
-v_upbuild	:= $(word 2, $(subst +, , $(v_upstream)))
-#v_upbase	:= $(word 1, $(subst ~, , $(v_upstream)))
-#v_upbuild	:= $(word 2, $(subst ~, , $(v_upstream)))
-# that should be the package version ...
 
-ifneq ($(v_debian),$(v_upbase)+$(v_upbuild)-$(v_pkgrel))
-  $(error wrong version: $(v_upbase)+$(v_upbuild)-$(v_pkgrel) should be: $(v_debian))
+ifeq (yes,$(is_upstream_release))
+  v_upbase      := $(word 1, $(subst +, , $(v_upstream)))
+  v_upbuild     := $(word 2, $(subst +, , $(v_upstream)))
+  ifneq ($(v_debian),$(v_upbase)+$(v_upbuild)-$(v_pkgrel))
+    $(error wrong version: $(v_upbase)+$(v_upbuild)-$(v_pkgrel) should be: $(v_debian))
+  endif
+else
+  v_upbase      := $(word 1, $(subst ~, , $(v_upstream)))
+  v_upbuild     := $(word 2, $(subst ~, , $(v_upstream)))
+  ifneq ($(v_debian),$(v_upbase)~$(v_upbuild)-$(v_pkgrel))
+    $(error wrong version: $(v_upbase)~$(v_upbuild)-$(v_pkgrel) should be: $(v_debian))
+  endif
 endif
-#ifneq ($(v_debian),$(v_upbase)~$(v_upbuild)-$(v_pkgrel))
-#  $(error wrong version: $(v_upbase)~$(v_upbuild)-$(v_pkgrel) should be: $(v_debian))
-#endif
 
 ifneq (,$(DEB_HOST_MULTIARCH))
   jdirname	= java-$(shortver)-$(origin)-$(DEB_HOST_ARCH)
@@ -152,6 +153,7 @@ ifneq (,$(filter parallel=%,$(subst $(COMMA), ,$(DEB_BUILD_OPTIONS))))
 endif
 
 jtreg_pkg = jtreg6
+testng_pkg= libtestng7-java
 
 with_check = $(if $(findstring nocheck, $(DEB_BUILD_OPTIONS)),,yes)
 # see Debian #920161
@@ -228,7 +230,7 @@ dpkg_buildflags_hs = \
 # jdk/make/CompileDemos.gmk (SetupJVMTIDemo) doesn't like commas in flags
 dpkg_buildflags_hs += \
 	DEB_LDFLAGS_MAINT_STRIP="-Wl,-z,relro -Wl,-Bsymbolic-functions" \
-	DEB_LDFLAGS_MAINT_APPEND="-Xlinker -z -Xlinker relro -Xlinker -Bsymbolic-functions"
+	DEB_LDFLAGS_MAINT_APPEND="-Xlinker -z -Xlinker relro -Xlinker -Bsymbolic-functions -Xlinker --no-as-needed"
 dpkg_buildflags_hs += dpkg-buildflags
 export EXTRA_CPPFLAGS_HS := $(shell $(dpkg_buildflags_hs) --get CPPFLAGS)
 export EXTRA_CFLAGS_HS   := $(shell $(dpkg_buildflags_hs) --get CFLAGS; $(dpkg_buildflags_hs) --get CPPFLAGS)
@@ -244,7 +246,7 @@ dpkg_buildflags_zero = \
 # jdk/make/CompileDemos.gmk (SetupJVMTIDemo) doesn't like commas in flags
 dpkg_buildflags_zero += \
 	DEB_LDFLAGS_MAINT_STRIP="-Wl,-z,relro -Wl,-Bsymbolic-functions" \
-	DEB_LDFLAGS_MAINT_APPEND="-Xlinker -z -Xlinker relro -Xlinker -Bsymbolic-functions"
+	DEB_LDFLAGS_MAINT_APPEND="-Xlinker -z -Xlinker relro -Xlinker -Bsymbolic-functions -Xlinker --no-as-needed"
 dpkg_buildflags_zero += dpkg-buildflags
 export EXTRA_CPPFLAGS_ZERO := $(shell $(dpkg_buildflags_zero) --get CPPFLAGS)
 export EXTRA_CFLAGS_ZERO   := $(shell $(dpkg_buildflags_zero) --get CFLAGS; $(dpkg_buildflags_zero) --get CPPFLAGS)
@@ -329,10 +331,14 @@ else ifneq (,$(filter $(distrel),bullseye groovy hirsute))
   export CC = $(DEB_HOST_GNU_TYPE)-gcc-10
   export CXX = $(DEB_HOST_GNU_TYPE)-g++-10
   bd_gcc = g++-10 <!cross>,
-else
+else ifneq (,$(filter $(distrel),jammy))
   export CC = $(DEB_HOST_GNU_TYPE)-gcc-11
   export CXX = $(DEB_HOST_GNU_TYPE)-g++-11
   bd_gcc = g++-11 <!cross>,
+else
+  export CC = $(DEB_HOST_GNU_TYPE)-gcc-12
+  export CXX = $(DEB_HOST_GNU_TYPE)-g++-12
+  bd_gcc = g++-12 <!cross>,
 endif
 
 # until we are able to b-d on gcc-for-host ...
@@ -507,6 +513,12 @@ endif
 
 ifneq (,$(filter $(distrel),precise trusty xenial))
   # building with a GCC from a PPA ...
+  COMMON_CONFIGURE_ARGS += \
+	--with-stdc++lib=static
+else ifneq (,$(filter $(DEB_HOST_ARCH), ia64))
+  # seen in 2023 on ia64:
+  # /usr/bin/ld: jvm-test-launcher: no symbol version section for versioned symbol `__cxa_pure_virtual@CXXABI_1.3'
+  # works when linking statically
   COMMON_CONFIGURE_ARGS += \
 	--with-stdc++lib=static
 else
@@ -684,7 +696,7 @@ min_jtreg_version := $(shell find test/ -name TEST.ROOT -exec grep -hr "^require
 
 ifeq ($(with_check),yes)
   bd_check = \
-    $(jtreg_pkg) (>= $(min_jtreg_version))$(nocheck_profile), libtestng7-java$(nocheck_profile), \
+    $(jtreg_pkg) (>= $(min_jtreg_version))$(nocheck_profile), $(testng_pkg)$(nocheck_profile), \
     xvfb$(nocheck_profile), xauth$(nocheck_profile), \
     xfonts-base$(nocheck_profile), libgl1-mesa-dri [!x32]$(nocheck_profile), \
     xfwm4$(nocheck_profile), x11-xkb-utils$(nocheck_profile), \
@@ -808,6 +820,7 @@ d_dbg	= debian/$(p_dbg)
 
 control_vars = \
 	'-Vvm:Name=$(vm_name)' \
+	'-Vvm:Version=$(shortver)' \
 	'-Vdlopenhl:Depends=$(dlopen_hl_depends)' \
 	'-Vdlopenhl:Recommends=$(dlopen_hl_recommends)' \
 	'-Vdlopenjre:Depends=$(dlopen_jre_depends)' \
@@ -1004,12 +1017,12 @@ stamps/zero-configure: stamps/build stamps/unpack
 
 stamps/unpack:
 	: # apply some architecture specific patches ...
-ifeq ($(DEB_HOST_ARCH),alpha)
-	patch -p1 < debian/patches/alpha-float-const.diff
-endif
-ifeq ($(DEB_HOST_ARCH),powerpcspe)
-	patch -p1 < debian/patches/powerpcspe-float-const.diff
-endif
+#ifeq ($(DEB_HOST_ARCH),alpha)
+#	patch -p1 < debian/patches/alpha-float-const.diff
+#endif
+#ifeq ($(DEB_HOST_ARCH),powerpcspe)
+#	patch -p1 < debian/patches/powerpcspe-float-const.diff
+#endif
 
 	$(MAKE) -f debian/rules packaging-files
 
@@ -1866,7 +1879,7 @@ endif
 
 is_release		= yes
 git_project		= jdk11u
-git_tag			= jdk-11.0.18+10
+git_tag			= jdk-11.0.20+8
 package_version		= $(subst jdk-,,$(git_tag))
 package_version		= $(shell echo $(PKGVERSION) | sed 's/-[^-][^-]*$$//')
 ifneq ($(is_release),yes)
@@ -1891,14 +1904,12 @@ get-orig:
 	    -type f -print -delete; \
 	  rm -v -rf $$d/src/java.desktop/share/native/libsplashscreen/giflib; \
 	  rm -v -rf $$d/src/java.desktop/share/native/libsplashscreen/libpng; \
-	  rm -v -f $$d/src/java.desktop/share/native/liblcms/cms*.c; \
-	  rm -v -f $$d/src/java.desktop/share/native/liblcms/lcms2*.h; \
 	  rm -v -rf $$d/src/java.smartcardio/unix/native/libj2pcsc/MUSCLE; \
 	  rm -v -rf $$d/.github; \
 	  rm -v -f $$d/.gitattributes; \
 	esac; \
 	mv $$d $(topdir); \
-	tar cfJ ../$(basename)_$(package_version).orig.tar.xz $(topdir); \
+	XZ_OPT=-9v tar cfJ ../$(basename)_$(package_version).orig.tar.xz $(topdir); \
 	rm -rf $(topdir)
 
 	rm -rf $(origdir)
