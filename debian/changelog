@@ -1,10 +1,59 @@
-openjdk-lts (11.0.21+9-0ubuntu1~20.04) focal-security; urgency=medium
+openjdk-lts (11.0.22+7-0ubuntu2~20.04.1) focal-security; urgency=medium
+
+  * No-change rebuild to correct the previous changelog entry (LP: #2050390)
+
+  * Upload to Ubuntu 20.04
+
+  * d/rules, d/control: Use gcc-10 on focal to work around LP: #2044899
+
+ -- Pushkar Kulkarni <pushkar.kulkarni@canonical.com>  Sat, 20 Jan 2024 15:57:19 +0530
+
+openjdk-lts (11.0.22+7-0ubuntu1) noble; urgency=medium
+
+  * OpenJDK 11.0.22 release, build 7
+    - CVEs:
+      + CVE-2024-20918
+      + CVE-2024-20919
+      + CVE-2024-20921
+      + CVE-2024-20945
+      + CVE-2024-20952
+    - Security fixes:
+      + JDK-8308204: Enhanced certificate processing.
+      + JDK-8314295: Enhance verification of verifier.
+      + JDK-8314307: Improve loop handling.
+      + JDK-8314468: Improve Compiler loops.
+      + JDK-8316976: Improve signature handling.
+      + JDK-8317547: Enhance TLS connection support.
+      + JDK-8314284: Enhance Nashorn performance (CVE-2024-20926).
+    Release notes:
+      https://www.oracle.com/java/technologies/javase/11-0-22-relnotes.html#R11_0_22
+  * Merge changes from openjdk-11 11.0.22+7-1 (LP: #2049715)
+      [ Vladimir Petko ]
+     - Generate d/watch to cope with early access and release builds.
+     - d/rules: Trim trailing whitespaces from debian/control.
+
+      [ Pushkar Kulkarni ]
+     - Minor improvements to the copyright-generator.
+
+      [ Pushkar Kulkarni ]
+     - debian/copyright: Update copyrights and notices, using a generator script.
+
+      [ Vladimir Petko ]
+     - d/copyright: Fix lintian warning.
+
+      [ Matthias Klose ]
+     - d/copyright: Fix source location.
+
+ -- Pushkar Kulkarni <pushkar.kulkarni@canonical.com>  Thu, 18 Jan 2024 13:52:07 +0530
+
+openjdk-lts (11.0.21+9-0ubuntu1) noble; urgency=medium
 
   * OpenJDK 11.0.21 release, build 9.
     - CVE-2023-22081.
     - Release notes:
       https://mail.openjdk.org/pipermail/jdk-updates-dev/2023-October/026351.html
   * d/source/lintian.overrides: use openjdk-lts package name.
+  * Disable jtreg tests on RISC-V due to the infrastructure issue.
   * Merge changes from openjdk-11 11.0.21+9-1 (LP: #2039754).
     - d/test: update problemlist.
     - d/p: drop exclude-broken-tests.patch.
@@ -21,10 +70,7 @@ openjdk-lts (11.0.21+9-0ubuntu1~20.04) focal-security; urgency=medium
       [ Pushkar Kulkarni ]
     - Handle limited ECC capabilities of NSS on older releases.
 
-  [ Vladimir Petko ]
-  * Upload to Ubuntu 20.04.
-
- -- Vladimir Petko <vladimir.petko@canonical.com>  Thu, 19 Oct 2023 20:55:44 +1300
+ -- Vladimir Petko <vladimir.petko@canonical.com>  Thu, 26 Oct 2023 16:16:27 +1300
 
 openjdk-lts (11.0.20+8-1ubuntu1) mantic; urgency=high
 
