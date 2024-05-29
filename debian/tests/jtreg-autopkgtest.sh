@@ -44,6 +44,11 @@ if [ ! -x "${BOOTJDK_HOME}/bin/java" ]; then
   exit 1
 fi
 
+if [ ! -x "${BOOTJDK_HOME}/bin/java" ]; then
+  echo "Error: '${BOOTJDK_HOME}/bin/java' is not an executable." >&2
+  exit 1
+fi
+
 # restrict the tests to a few archs (set from debian/rules)
 if ! echo "${host_arch}" | grep -qE "^($(echo amd64 i386 arm64 armhf ppc64 ppc64el sparc64 s390x alpha ia64 powerpc powerpcspe ppc64 sh4 x32 armel mipsel mips64el | tr ' ' '|'))$"; then
   echo "Error: ${host_arch} is not on the jtreg_archs list, ignoring it."
