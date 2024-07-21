@@ -32,6 +32,7 @@ common_licenses = {};
 excluded_files = [
   ".github/*",
   ".gitattributes",
+  "test/jdk/sun/management/windows/revokeall.exe",
   "src/java.base/share/native/libzip/zlib/*",
   "src/java.desktop/share/native/libsplashscreen/giflib/*",
   "src/java.desktop/share/native/libsplashscreen/libpng/*",

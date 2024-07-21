@@ -22,7 +22,7 @@ if [ -z "${BOOTJDK_HOME+x}" ]; then
   BOOTJDK_HOME=${JDK_TO_TEST}
 fi
 
-jtreg_version="$(dpkg-query -W jtreg6 | cut -f2)"
+jtreg_version="$(dpkg-query -W jtreg7 | cut -f2)"
 
 # set additional jtreg options
 jt_options="${JTREG_OPTIONS:-}"
@@ -36,11 +36,6 @@ fi
 # check java binary
 if [ ! -x "${JDK_TO_TEST}/bin/java" ]; then
   echo "Error: '${JDK_TO_TEST}/bin/java' is not an executable." >&2
-  exit 1
-fi
-
-if [ ! -x "${BOOTJDK_HOME}/bin/java" ]; then
-  echo "Error: '${BOOTJDK_HOME}/bin/java' is not an executable." >&2
   exit 1
 fi
 
@@ -101,7 +96,6 @@ for i in 0 1 2; do
   # save each try under its own folder to preserve history
   report_path="${i}/JTreport"
   report_dir="${output_dir}/${report_path}"
-# see make/RunTests.gmk for a set of good options
   jtreg ${jt_options} \
     -J-Djtreg.home=/usr/share/jtreg \
     -verbose:summary \
@@ -114,9 +108,9 @@ for i in 0 1 2; do
     -reportDir:"${report_dir}" \
     -jdk:${JDK_TO_TEST} \
     -vmoption:-Dtest.boot.jdk=${BOOTJDK_HOME} \
+    -vmoption:-XX:MaxRAMPercentage=25 \
     -vmoption:-Duser.home=${AUTOPKGTEST_TMP} \
     -vmoption:-Djava.io.tmpdir=${AUTOPKGTEST_TMP} \
-    -vmoption:-XX:MaxRAMPercentage=25 \
     -e:NSS_DEFAULT_DB_TYPE=sql \
     ${on_retry:-} $@ \
       && exit_code=0 || exit_code=$?
