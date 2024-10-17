@@ -1,8 +1,50 @@
-openjdk-lts (11.0.24+8-1ubuntu3~20.04) focal-security; urgency=medium
+openjdk-lts (11.0.25+9-1ubuntu1~20.04) focal-security; urgency=medium
 
-  * Upload to Ubuntu 20.04.
+  * OpenJDK 11.0.25 release, build 9.
 
- -- Vladimir Petko <vladimir.petko@canonical.com>  Mon, 22 Jul 2024 08:53:23 +1200
+     - CVEs
+       + CVE-2024-21208, 8328286: Enhance HTTP client
+       + CVE-2024-21210, 8328544: Improve handling of vectorization
+       + CVE-2024-21217, 8331446: Improve deserialization support
+       + CVE-2024-21235, 8332644: Improve graph optimizations
+
+     - Security fixes
+       + JDK-8290367, JDK-8332643: Update default value and extend the scope
+         of the com.sun.jndi.ldap.object.trustSerialData system property
+       + JDK-8307383: Enhance DTLS connections
+       + JDK-8328286: Enhance HTTP client
+       + JDK-8328544: Improve handling of vectorization
+       + JDK-8328726: Better Kerberos support
+       + JDK-8331446: Improve deserialization support
+       + JDK-8332644: Improve graph optimizations
+       + JDK-8335713: Enhance vectorization analysis
+
+  [ Vladimir Petko ]
+  * d/rules: do not include dtrace support for S390x (JDK-8305174).
+  * d/t/problems.csv: Disable jdk/sun/security/util/Debug/DebugOptions.java
+    due to JDK-8339713.
+
+  [ Pushkar Kulkarni ]
+  * d/{control, watch}: regenerate for upload to Ubuntu 20.04
+  * Upload to Ubuntu 20.04
+
+ -- Pushkar Kulkarni <pushkar.kulkarni@canonical.com>  Thu, 17 Oct 2024 22:51:26 +0530
+
+openjdk-lts (11.0.25~5ea-1ubuntu1) oracular; urgency=medium
+
+  * OpenJDK 11.0.25+5 build (early access) (LP: #2080298).
+  * d/copyright-generator/strip-common-licenses.sh: Add GPLv3 to the
+    list of common licenses.
+  * d/rules, d/control.in: Depend on pkgconf rather than pkg-config in
+    bookworm and later releases. This resolves lintian warning
+    build-depends-on-obsolete-package Build-Depends: pkg-config => pkgconf.
+  * Build using GCC 14 on development versions.
+  * d/t/problemlist.csv: Update problemlist.csv for July release.
+  * d/copyright-generator/copyright-gen.py: remove spurious whitespaces.
+  * Enable dtrace support.
+  * Regenerate control files.
+
+ -- Vladimir Petko <vladimir.petko@canonical.com>  Tue, 10 Sep 2024 08:53:42 +1200
 
 openjdk-lts (11.0.24+8-1ubuntu3) oracular; urgency=medium
 
