@@ -1,4 +1,38 @@
-openjdk-lts (11.0.25+9-1ubuntu1~20.04) focal-security; urgency=medium
+openjdk-lts (11.0.26+4-1ubuntu1~20.04) focal-security; urgency=medium
+
+  * Upload to Ubuntu 20.04.
+  * d/rules: disable dtrace on jammy armhf (LP: #2091226).
+  * d/rules: point --with-jtreg to /usr/share/jtreg
+
+ -- Vladimir Petko <vladimir.petko@canonical.com>  Fri, 24 Jan 2025 11:35:35 +1300
+
+openjdk-lts (11.0.26+4-1ubuntu1) plucky; urgency=medium
+
+  * OpenJDK 11.0.26 release, build 4. Release notes:
+    https://mail.openjdk.org/pipermail/jdk-updates-dev/2025-January/040826.html
+
+    - CVEs:
+      +  CVE-2025-21502 - 8330045: Enhance array handling.
+
+  * d/rules: Dump complete hs_err_pid and replay_pid logs to stdout.
+  * d/t/problems.csv: Add openjdk-24 and openjdk-25 to the problems.csv.
+  * d/{copyright, watch}: regenerate.  
+
+  [ Matthias Klose ]
+  * d/rules: Also dump logs for zero builds and for build failures.
+
+ -- Vladimir Petko <vladimir.petko@canonical.com>  Wed, 22 Jan 2025 15:18:54 +1300
+
+openjdk-lts (11.0.26~3ea-1ubuntu1) plucky; urgency=medium
+
+  * OpenJDK 11.0.26+3 build (early access) (LP: #2092368).
+
+  [ Pushkar Kulkarni ]
+  * d/t/problems.csv: Update based on recent JTREG runs.
+
+ -- Vladimir Petko <vladimir.petko@canonical.com>  Mon, 23 Dec 2024 09:41:59 +1300
+
+openjdk-lts (11.0.25+9-1ubuntu1) plucky; urgency=medium
 
   * OpenJDK 11.0.25 release, build 9.
 
@@ -23,10 +57,6 @@ openjdk-lts (11.0.25+9-1ubuntu1~20.04) focal-security; urgency=medium
   * d/rules: do not include dtrace support for S390x (JDK-8305174).
   * d/t/problems.csv: Disable jdk/sun/security/util/Debug/DebugOptions.java
     due to JDK-8339713.
-
-  [ Pushkar Kulkarni ]
-  * d/{control, watch}: regenerate for upload to Ubuntu 20.04
-  * Upload to Ubuntu 20.04
 
  -- Pushkar Kulkarni <pushkar.kulkarni@canonical.com>  Thu, 17 Oct 2024 22:51:26 +0530
 
