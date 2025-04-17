@@ -1,10 +1,28 @@
-openjdk-lts (11.0.26+4-1ubuntu1~20.04) focal-security; urgency=medium
+openjdk-lts (11.0.27+6~us1-0ubuntu1~20.04) focal-security; urgency=medium
 
-  * Upload to Ubuntu 20.04.
-  * d/rules: disable dtrace on jammy armhf (LP: #2091226).
+  * OpenJDK 11.0.27 release, build 6. Release notes:
+    https://mail.openjdk.org/pipermail/jdk-updates-dev/2025-April/043306.html
+
+    - CVEs:
+      + CVE-2025-21587
+      + CVE-2025-30691
+      + CVE-2025-30698
+
+  [ Vladimir Petko ]
   * d/rules: point --with-jtreg to /usr/share/jtreg
+  * d/rules: Disable dtrace on jammy armhf (was not enabled before and cannot
+    be built due to a GCC ICE (see LP #2091225)
+  * d/t/problems.csv: Disable tests failing due to upstream bugs.
 
- -- Vladimir Petko <vladimir.petko@canonical.com>  Fri, 24 Jan 2025 11:35:35 +1300
+  [ Matthias Klose ]
+  * Honour DEB_BUILD_OPTIONS=parallel=N while running jtreg tests (Helmut
+    Grohne). Addresses: #1095920
+
+  [ Pushkar Kulkarni ]
+  * d/control: regenerate for Ubuntu 20.04
+  * Upload to Ubuntu 20.04
+
+ -- Pushkar Kulkarni <pushkar.kulkarni@canonical.com>  Thu, 17 Apr 2025 14:10:13 +0530
 
 openjdk-lts (11.0.26+4-1ubuntu1) plucky; urgency=medium
 
